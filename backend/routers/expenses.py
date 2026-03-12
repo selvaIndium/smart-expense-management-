@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import date
 from typing import List, Optional
-from app.database import get_db
-from app import models, schemas, auth
+from database import get_db
+import models
+import schemas
+import auth
 
-router = APIRouter(prefix="/expenses")
+router = APIRouter(prefix="/expenses", tags=["Expenses"])
 
 
 @router.post("/", response_model=schemas.ExpenseResponse, status_code=201)
@@ -15,10 +17,9 @@ def add_expense(
     current_user: models.User = Depends(auth.get_current_user)
 ):
     expense = models.Expense(
-        title=data.title,
         amount=data.amount,
         description=data.description or "",
-        date=data.date or datetime.utcnow(),
+        expense_date=data.expense_date or date.today(),
         category_id=data.category_id,
         user_id=current_user.id
     )
@@ -39,13 +40,13 @@ def list_expenses(
     query = db.query(models.Expense).filter(models.Expense.user_id == current_user.id)
 
     if month:
-        query = query.filter(models.Expense.date.op("strftime")("%m", models.Expense.date) == f"{month:02d}")
+        query = query.filter(models.Expense.expense_date.op("strftime")("%m", models.Expense.expense_date) == f"{month:02d}")
     if year:
-        query = query.filter(models.Expense.date.op("strftime")("%Y", models.Expense.date) == str(year))
+        query = query.filter(models.Expense.expense_date.op("strftime")("%Y", models.Expense.expense_date) == str(year))
     if category_id:
         query = query.filter(models.Expense.category_id == category_id)
 
-    return query.order_by(models.Expense.date.desc()).all()
+    return query.order_by(models.Expense.expense_date.desc()).all()
 
 
 @router.get("/{expense_id}", response_model=schemas.ExpenseResponse)
@@ -79,12 +80,12 @@ def update_expense(
     if not expense:
         raise HTTPException(status_code=404, detail="Expense not found")
 
-    if data.title is not None:
-        expense.title = data.title
     if data.amount is not None:
         expense.amount = data.amount
     if data.description is not None:
         expense.description = data.description
+    if data.expense_date is not None:
+        expense.expense_date = data.expense_date
     if data.category_id is not None:
         expense.category_id = data.category_id
 

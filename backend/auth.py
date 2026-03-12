@@ -26,20 +26,20 @@ def verify_password(plain, hashed):
     return pwd_context.verify(plain, hashed)
 
 
-def create_token(username):
+def create_token(email):
     expire = datetime.now(timezone.utc) + timedelta(hours=1)
-    token = jwt.encode({"sub": username, "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
+    token = jwt.encode({"sub": email, "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
     return token
 
 
 def get_current_user(token=Depends(oauth2_scheme), db=Depends(get_db)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username = payload.get("sub")
+        email = payload.get("sub")
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    user = db.query(models.User).filter(models.User.username == username).first()
+    user = db.query(models.User).filter(models.User.email == email).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     return user
