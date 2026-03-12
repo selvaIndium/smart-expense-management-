@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import extract, func
 from typing import List
 from database import get_db
-from .. import models, schemas, auth
+import models
+import schemas
+import auth
 
 router = APIRouter(prefix="/budgets", tags=["Budgets"])
 
@@ -20,7 +22,7 @@ def create_budget(
     budget = models.Budget(
         month=data.month,
         year=data.year,
-        limit_amount=data.limit_amount,
+        amount=data.amount,
         category_id=data.category_id,
         user_id=current_user.id
     )
@@ -65,8 +67,8 @@ def monthly_insight(
 ):
     total_spent = db.query(func.sum(models.Expense.amount)).filter(
         models.Expense.user_id == current_user.id,
-        extract("month", models.Expense.date) == month,
-        extract("year",  models.Expense.date) == year
+        extract("month", models.Expense.expense_date) == month,
+        extract("year",  models.Expense.expense_date) == year
     ).scalar() or 0.0
 
     budget = db.query(models.Budget).filter(
@@ -77,13 +79,13 @@ def monthly_insight(
     ).first()
 
     if budget:
-        remaining = budget.limit_amount - total_spent
+        remaining = budget.amount - total_spent
         status    = "Under budget" if remaining >= 0 else "Over budget"
         return schemas.MonthlyInsight(
             month=month,
             year=year,
             total_spent=round(total_spent, 2),
-            budget_limit=budget.limit_amount,
+            budget_limit=budget.amount,
             remaining=round(remaining, 2),
             status=status
         )
