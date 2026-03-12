@@ -1,21 +1,20 @@
 from datetime import date, datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=6)
 
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     email: EmailStr
     created_at: datetime
-
-    class Config:
-        orm_mode = True
 
 
 class LoginRequest(BaseModel):
@@ -29,32 +28,33 @@ class Token(BaseModel):
 
 
 class CategoryCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=100)
 
 
 class CategoryResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
 
-    class Config:
-        orm_mode = True
-
 
 class ExpenseCreate(BaseModel):
-    amount: float
+    amount: float = Field(gt=0)
     description: Optional[str] = None
     expense_date: Optional[date] = None
     category_id: Optional[int] = None
 
 
 class ExpenseUpdate(BaseModel):
-    amount: Optional[float] = None
+    amount: Optional[float] = Field(default=None, gt=0)
     description: Optional[str] = None
     expense_date: Optional[date] = None
     category_id: Optional[int] = None
 
 
 class ExpenseResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     amount: float
     description: Optional[str]
@@ -62,27 +62,23 @@ class ExpenseResponse(BaseModel):
     category_id: Optional[int]
     user_id: int
 
-    class Config:
-        orm_mode = True
-
 
 class BudgetCreate(BaseModel):
-    amount: float
-    month: int
-    year: int
+    amount: float = Field(gt=0)
+    month: int = Field(ge=1, le=12)
+    year: int = Field(ge=2000, le=2100)
     category_id: Optional[int] = None
 
 
 class BudgetResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     amount: float
     month: int
     year: int
     category_id: Optional[int]
     user_id: int
-
-    class Config:
-        orm_mode = True
 
 
 class MonthlyInsight(BaseModel):
