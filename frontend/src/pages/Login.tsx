@@ -1,49 +1,50 @@
-import { useState, type FormEvent } from "react";
-import { useNavigate, Link } from "react-router";
-import { useAuth } from "../context/AuthContext";
+import { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const navigate = useNavigate()
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError("");
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    const form = new FormData()
+    form.append('username', username)
+    form.append('password', password)
     try {
-      await login(email, password);
-      navigate("/");
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      const res = await fetch('/auth/login', { method: 'POST', body: form })
+      const data = await res.json()
+      if (!res.ok) { setError(data.detail || 'Login failed'); return }
+      localStorage.setItem('token', data.access_token)
+      navigate('/')
+    } catch {
+      setError('Server error. Is the backend running?')
     }
-  };
+  }
 
   return (
-    <div className="auth-page">
-      <h2>Login</h2>
-      {error && <p className="error">{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit">Login</button>
-      </form>
-      <p>
-        No account? <Link to="/register">Register</Link>
-      </p>
+    <div className="auth-wrapper">
+      <div className="auth-box">
+        <h2>💸 Welcome Back</h2>
+        <p>Sign in to your expense manager</p>
+        <form onSubmit={handleLogin}>
+          <div className="form-group">
+            <label>Username</label>
+            <input value={username} onChange={e => setUsername(e.target.value)} placeholder="your_username" required />
+          </div>
+          <div className="form-group">
+            <label>Password</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
+          </div>
+          {error && <p className="error">{error}</p>}
+          <button className="btn btn-primary" style={{marginTop:'1rem'}}>Sign In</button>
+        </form>
+        <div className="auth-footer">
+          Don't have an account? <Link to="/register">Register</Link>
+        </div>
+      </div>
     </div>
-  );
+  )
 }
