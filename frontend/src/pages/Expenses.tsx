@@ -1,166 +1,107 @@
-import { useState, useEffect, type FormEvent } from "react";
-import { api } from "../api/api";
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 
-interface Expense {
-  id: number;
-  amount: number;
-  description: string | null;
-  expense_date: string | null;
-  category_id: number | null;
-  user_id: number;
-}
-
-interface Category {
-  id: number;
-  name: string;
-}
+const authHeader = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` })
 
 export default function Expenses() {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
-  const [expenseDate, setExpenseDate] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [error, setError] = useState("");
+  const [expenses, setExpenses] = useState<any[]>([])
+  const [categories, setCategories] = useState<any[]>([])
+  const [showModal, setShowModal] = useState(false)
+  const [form, setForm] = useState({ title: '', amount: '', category_id: '', date: '' })
+  const [error, setError] = useState('')
+  const navigate = useNavigate()
 
-  const load = async () => {
-    try {
-      const [exp, cats] = await Promise.all([
-        api.get("/expenses/"),
-        api.get("/categories/"),
-      ]);
-      setExpenses(exp);
-      setCategories(cats);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load");
-    }
-  };
+  const load = () => {
+    fetch('/expenses', { headers: authHeader() }).then(r => r.json()).then(setExpenses).catch(() => {})
+    fetch('/categories', { headers: authHeader() }).then(r => r.json()).then(setCategories).catch(() => {})
+  }
+  useEffect(() => { load() }, [])
 
-  useEffect(() => {
-    load();
-  }, []);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setError('')
+    const res = await fetch('/expenses', {
+      method: 'POST',
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, amount: parseFloat(form.amount), category_id: parseInt(form.category_id) }),
+    })
+    if (res.ok) { setShowModal(false); setForm({ title: '', amount: '', category_id: '', date: '' }); load() }
+    else { const d = await res.json(); setError(d.detail || 'Failed') }
+  }
 
-  const resetForm = () => {
-    setAmount("");
-    setDescription("");
-    setExpenseDate("");
-    setCategoryId("");
-    setEditingId(null);
-  };
+  const del = async (id: number) => {
+    await fetch(`/expenses/${id}`, { method: 'DELETE', headers: authHeader() })
+    load()
+  }
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError("");
-    const body = {
-      amount: parseFloat(amount),
-      description: description || null,
-      expense_date: expenseDate || null,
-      category_id: categoryId ? parseInt(categoryId) : null,
-    };
-    try {
-      if (editingId) {
-        await api.put(`/expenses/${editingId}`, body);
-      } else {
-        await api.post("/expenses/", body);
-      }
-      resetForm();
-      load();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to save");
-    }
-  };
-
-  const handleEdit = (exp: Expense) => {
-    setEditingId(exp.id);
-    setAmount(String(exp.amount));
-    setDescription(exp.description || "");
-    setExpenseDate(exp.expense_date || "");
-    setCategoryId(exp.category_id ? String(exp.category_id) : "");
-  };
-
-  const handleDelete = async (id: number) => {
-    try {
-      await api.delete(`/expenses/${id}`);
-      load();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to delete");
-    }
-  };
-
-  const getCategoryName = (id: number | null) => {
-    if (!id) return "—";
-    return categories.find((c) => c.id === id)?.name || "Unknown";
-  };
+  const logout = () => { localStorage.removeItem('token'); navigate('/login') }
 
   return (
-    <div>
-      <h2>Expenses</h2>
-      {error && <p className="error">{error}</p>}
-      <form onSubmit={handleSubmit} className="inline-form">
-        <input
-          type="number"
-          step="0.01"
-          min="0.01"
-          placeholder="Amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          required
-        />
-        <input
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <input
-          type="date"
-          value={expenseDate}
-          onChange={(e) => setExpenseDate(e.target.value)}
-        />
-        <select
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-        >
-          <option value="">No category</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <button type="submit">{editingId ? "Update" : "Add"}</button>
-        {editingId && (
-          <button type="button" onClick={resetForm}>
-            Cancel
-          </button>
-        )}
-      </form>
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Amount</th>
-            <th>Description</th>
-            <th>Category</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {expenses.map((exp) => (
-            <tr key={exp.id}>
-              <td>{exp.expense_date || "—"}</td>
-              <td>{exp.amount.toFixed(2)}</td>
-              <td>{exp.description || "—"}</td>
-              <td>{getCategoryName(exp.category_id)}</td>
-              <td>
-                <button onClick={() => handleEdit(exp)}>Edit</button>
-                <button onClick={() => handleDelete(exp.id)}>Delete</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+    <>
+      <nav>
+        <span className="logo">💸 ExpenseIQ</span>
+        <div className="nav-links">
+          <Link to="/">Dashboard</Link>
+          <Link to="/expenses" className="active">Expenses</Link>
+          <Link to="/budgets">Budgets</Link>
+          <Link to="/categories">Categories</Link>
+        </div>
+        <button className="logout" onClick={logout}>Logout</button>
+      </nav>
+      <div className="page">
+        <div className="top-bar">
+          <div className="page-title">Expenses</div>
+          <button className="btn btn-success" onClick={() => setShowModal(true)}>+ Add Expense</button>
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Title</th><th>Category</th><th>Amount</th><th>Date</th><th>Action</th></tr></thead>
+            <tbody>
+              {expenses.map((e: any) => (
+                <tr key={e.id}>
+                  <td>{e.title || e.description}</td>
+                  <td><span className="badge blue">{e.category_name || e.category || '—'}</span></td>
+                  <td style={{color:'#f87171',fontWeight:600}}>₹{e.amount}</td>
+                  <td style={{color:'#64748b'}}>{e.date ? new Date(e.date).toLocaleDateString() : '—'}</td>
+                  <td><button className="btn btn-danger btn-small" onClick={() => del(e.id)}>Delete</button></td>
+                </tr>
+              ))}
+              {expenses.length === 0 && <tr><td colSpan={5} style={{textAlign:'center',color:'#64748b',padding:'2rem'}}>No expenses yet. Add one!</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>Add Expense</h3>
+            <form onSubmit={submit}>
+              <div className="form-group"><label>Title</label>
+                <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
+              </div>
+              <div className="form-row">
+                <div className="form-group"><label>Amount (₹)</label>
+                  <input type="number" step="0.01" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} required />
+                </div>
+                <div className="form-group"><label>Date</label>
+                  <input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} required />
+                </div>
+              </div>
+              <div className="form-group"><label>Category</label>
+                <select value={form.category_id} onChange={e => setForm({...form, category_id: e.target.value})} required>
+                  <option value="">Select category</option>
+                  {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              {error && <p className="error">{error}</p>}
+              <div className="modal-actions">
+                <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-success">Add</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
+  )
 }
