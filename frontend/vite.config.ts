@@ -10,5 +10,5 @@ export default defineConfig({
       '/expenses': 'http://localhost:8000',
       '/budgets': 'http://localhost:8000',
     },
-  },
+  }
 })

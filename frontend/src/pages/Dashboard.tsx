@@ -1,23 +1,25 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 const authHeader = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` })
 
 export default function Dashboard() {
   const [expenses, setExpenses] = useState<any[]>([])
   const [budgets, setBudgets] = useState<any[]>([])
+  const { logout } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
-    fetch('/expenses', { headers: authHeader() }).then(r => r.json()).then(setExpenses).catch(() => {})
-    fetch('/budgets', { headers: authHeader() }).then(r => r.json()).then(setBudgets).catch(() => {})
+    fetch('/expenses/', { headers: authHeader() }).then(r => r.json()).then(setExpenses).catch(() => {})
+    fetch('/budgets/', { headers: authHeader() }).then(r => r.json()).then(setBudgets).catch(() => {})
   }, [])
 
   const total = expenses.reduce((s, e) => s + (e.amount || 0), 0)
   const thisMonth = expenses.filter(e => new Date(e.date).getMonth() === new Date().getMonth())
   const monthTotal = thisMonth.reduce((s, e) => s + (e.amount || 0), 0)
 
-  const logout = () => { localStorage.removeItem('token'); navigate('/login') }
+  const handleLogout = () => { logout(); navigate('/login') }
 
   return (
     <>
@@ -25,11 +27,12 @@ export default function Dashboard() {
         <span className="logo">💸 ExpenseIQ</span>
         <div className="nav-links">
           <Link to="/" className="active">Dashboard</Link>
-          <Link to="/expenses">Expenses</Link>
+          <Link to="/">Expenses</Link>
           <Link to="/budgets">Budgets</Link>
           <Link to="/categories">Categories</Link>
+          <Link to="/insights">Insights</Link>
         </div>
-        <button className="logout" onClick={logout}>Logout</button>
+        <button className="logout" onClick={handleLogout}>Logout</button>
       </nav>
       <div className="page">
         <div className="page-title">Dashboard</div>
@@ -55,7 +58,7 @@ export default function Dashboard() {
         <div className="card">
           <div className="top-bar">
             <h3>Recent Expenses</h3>
-            <Link to="/expenses"><button className="btn btn-outline btn-small">View All</button></Link>
+            <Link to="/"><button className="btn btn-outline btn-small">View All</button></Link>
           </div>
           <div className="table-wrap">
             <table>

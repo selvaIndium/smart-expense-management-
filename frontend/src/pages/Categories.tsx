@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { getApiErrorMessage } from '../api/errors'
+import { useAuth } from '../context/AuthContext'
 
 const authHeader = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` })
 
@@ -10,20 +12,26 @@ export default function Categories() {
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ name: '', icon: '🍔' })
   const [error, setError] = useState('')
+  const { logout } = useAuth()
   const navigate = useNavigate()
 
-  const load = () => fetch('/categories', { headers: authHeader() }).then(r => r.json()).then(setCats).catch(() => {})
+  const load = () => fetch('/categories/', { headers: authHeader() }).then(r => r.json()).then(setCats).catch(() => {})
   useEffect(() => { load() }, [])
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setError('')
-    const res = await fetch('/categories', {
-      method: 'POST',
-      headers: { ...authHeader(), 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    })
-    if (res.ok) { setShowModal(false); setForm({ name: '', icon: '🍔' }); load() }
-    else { const d = await res.json(); setError(d.detail || 'Failed') }
+    try {
+      const res = await fetch('/categories/', {
+        method: 'POST',
+        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: form.name.trim() }),
+      })
+      if (res.ok) { setShowModal(false); setForm({ name: '', icon: '🍔' }); load(); return }
+      const d = await res.json().catch(() => ({}))
+      setError(getApiErrorMessage(d, 'Failed to add category'))
+    } catch {
+      setError('Server error. Please try again.')
+    }
   }
 
   const del = async (id: number) => {
@@ -31,19 +39,19 @@ export default function Categories() {
     load()
   }
 
-  const logout = () => { localStorage.removeItem('token'); navigate('/login') }
+  const handleLogout = () => { logout(); navigate('/login') }
 
   return (
     <>
       <nav>
         <span className="logo">💸 ExpenseIQ</span>
         <div className="nav-links">
-          <Link to="/">Dashboard</Link>
-          <Link to="/expenses">Expenses</Link>
+          <Link to="/">Expenses</Link>
           <Link to="/budgets">Budgets</Link>
           <Link to="/categories" className="active">Categories</Link>
+          <Link to="/insights">Insights</Link>
         </div>
-        <button className="logout" onClick={logout}>Logout</button>
+        <button className="logout" onClick={handleLogout}>Logout</button>
       </nav>
       <div className="page">
         <div className="top-bar">

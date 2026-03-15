@@ -11,7 +11,7 @@ import models
 for generating secret_key we can do openssl -rand hex or smthg idk
 """
 
-SECRET_KEY = "we shd add key here in maybe final show "
+SECRET_KEY = "d941e585bcf02d876b4736ebb216931ee472a1671bf4adea00147fc62ef95bd7"
 ALGORITHM = "HS256"
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

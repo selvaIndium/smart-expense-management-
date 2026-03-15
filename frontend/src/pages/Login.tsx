@@ -1,26 +1,26 @@
-import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useState, type FormEvent } from 'react'
+import { useNavigate, Link, Navigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const { token, login } = useAuth()
   const navigate = useNavigate()
 
-  const handleLogin = async (e: React.FormEvent) => {
+  if (token || localStorage.getItem('token')) {
+    return <Navigate to="/" replace />
+  }
+
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
-    const form = new FormData()
-    form.append('username', username)
-    form.append('password', password)
     try {
-      const res = await fetch('/auth/login', { method: 'POST', body: form })
-      const data = await res.json()
-      if (!res.ok) { setError(data.detail || 'Login failed'); return }
-      localStorage.setItem('token', data.access_token)
+      await login(email, password)
       navigate('/')
-    } catch {
-      setError('Server error. Is the backend running?')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Login failed')
     }
   }
 
@@ -31,8 +31,8 @@ export default function Login() {
         <p>Sign in to your expense manager</p>
         <form onSubmit={handleLogin}>
           <div className="form-group">
-            <label>Username</label>
-            <input value={username} onChange={e => setUsername(e.target.value)} placeholder="your_username" required />
+            <label>Email</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
           </div>
           <div className="form-group">
             <label>Password</label>

@@ -1,10 +1,17 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, Navigate } from 'react-router-dom'
+import { getApiErrorMessage } from '../api/errors'
+import { useAuth } from '../context/AuthContext'
 
 export default function Register() {
-  const [form, setForm] = useState({ username: '', email: '', password: '' })
+  const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
+  const { token } = useAuth()
   const navigate = useNavigate()
+
+  if (token || localStorage.getItem('token')) {
+    return <Navigate to="/" replace />
+  }
 
   const handle = (e: React.FormEvent) => {
     e.preventDefault()
@@ -14,8 +21,8 @@ export default function Register() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     }).then(r => r.json()).then(data => {
-      if (data.id || data.username) navigate('/login')
-      else setError(data.detail || 'Registration failed')
+      if (data.id) navigate('/login')
+      else setError(getApiErrorMessage(data, 'Registration failed'))
     }).catch(() => setError('Server error'))
   }
 
@@ -25,10 +32,6 @@ export default function Register() {
         <h2>🚀 Create Account</h2>
         <p>Start tracking your expenses today</p>
         <form onSubmit={handle}>
-          <div className="form-group">
-            <label>Username</label>
-            <input value={form.username} onChange={e => setForm({...form, username: e.target.value})} placeholder="john_doe" required />
-          </div>
           <div className="form-group">
             <label>Email</label>
             <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="john@email.com" required />

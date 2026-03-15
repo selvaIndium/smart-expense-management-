@@ -35,7 +35,6 @@ class Expense(Base):
     amount = Column(Float, nullable=False)
     description = Column(String)
     expense_date = Column(Date)
-
     user_id = Column(Integer, ForeignKey("users.id"))
     category_id = Column(Integer, ForeignKey("categories.id"))
 
@@ -48,7 +47,6 @@ class Budget(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     amount = Column(Float, nullable=False)
-
     month = Column(Integer)
     year = Column(Integer)
 

@@ -175,9 +175,52 @@ tr:hover td { background: #1e293b; }
   align-items: center;
   margin-bottom: 1.5rem;
 }
+.filters-row {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.filter-input {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  outline: none;
+}
+.filter-input:focus { border-color: #38bdf8; }
 .auth-footer { text-align: center; margin-top: 1.5rem; font-size: 0.85rem; color: #64748b; }
 .auth-footer a { color: #38bdf8; text-decoration: none; }
 .progress-bar-wrap { background: #334155; border-radius: 99px; height: 8px; margin-top: 0.5rem; }
 .progress-bar { height: 8px; border-radius: 99px; background: #38bdf8; transition: width 0.4s; }
 .progress-bar.warn { background: #f59e0b; }
 .progress-bar.over { background: #ef4444; }
+
+.insights-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.insights-status-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .filters-row {
+    grid-template-columns: 1fr;
+  }
+  .insights-form {
+    grid-template-columns: 1fr;
+  }
+}
